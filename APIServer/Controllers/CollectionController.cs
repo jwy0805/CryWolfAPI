@@ -1,35 +1,42 @@
 using Microsoft.AspNetCore.Mvc;
 using AccountServer.DB;
+using AccountServer.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 #pragma warning disable CS0472 // 이 형식의 값은 'null'과 같을 수 없으므로 식의 결과가 항상 동일합니다.
 
 namespace AccountServer.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CollectionController
+public class CollectionController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly TokenService _tokenService;
+    private readonly TokenValidator _tokenValidator;
     
-    public CollectionController(AppDbContext context)
+    public CollectionController(AppDbContext context, TokenService ts, TokenValidator tv)
     {
         _context = context;
+        _tokenService = ts;
+        _tokenValidator = tv;
     }
     
     [HttpPost]
     [Route("GetCards")]
-    public GetOwnedCardsPacketResponse GetCollection([FromBody] GetOwnedCardsPacketRequired required)
+    public IActionResult GetCollection([FromBody] GetOwnedCardsPacketRequired required)
     {
-        GetOwnedCardsPacketResponse res = new();
-        var account = _context.User
-            .AsNoTracking()
-            .FirstOrDefault(user => user.UserAccount == required.UserAccount);
+        var principal = _tokenValidator.ValidateAccessToken(required.AccessToken);
+        if (principal == null) return Unauthorized();
+        
+        var res = new GetOwnedCardsPacketResponse();
+        var userId = _tokenValidator.GetUserIdFromAccessToken(principal);
 
-        if (account != null)
+        if (userId != null)
         {
             var units = _context.Unit.AsNoTracking().ToList();
             var userUnitIds = _context.UserUnit.AsNoTracking()
-                .Where(userUnit => userUnit.UserId == account.UserId && userUnit.Count > 0)
+                .Where(userUnit => userUnit.UserId == userId && userUnit.Count > 0)
                 .Select(userUnit => userUnit.UnitId)
                 .ToList();
 
@@ -67,23 +74,24 @@ public class CollectionController
             res.GetCardsOk = false;
         }
 
-        return res;
+        return Ok(res);
     }
     
     [HttpPost]
     [Route("GetDecks")]
-    public GetInitDeckPacketResponse GetDeck([FromBody] GetInitDeckPacketRequired required)
+    public IActionResult GetDeck([FromBody] GetInitDeckPacketRequired required)
     {
-        GetInitDeckPacketResponse res = new();
-        var account = _context.User
-            .AsNoTracking()
-            .FirstOrDefault(user => user.UserAccount == required.UserAccount);
+        var principal = _tokenValidator.ValidateAccessToken(required.AccessToken);
+        if (principal == null) return Unauthorized();
+        
+        var res = new GetInitDeckPacketResponse();
+        var userId = _tokenValidator.GetUserIdFromAccessToken(principal);
 
-        if (account != null)
+        if (userId != null)
         {
             var deckInfoList = _context.Deck
                 .AsNoTracking()
-                .Where(deck => deck.UserId == account.UserId)
+                .Where(deck => deck.UserId == userId)
                 .Select(deck => new DeckInfo
                 {
                     DeckId = deck.DeckId,
@@ -114,24 +122,25 @@ public class CollectionController
             res.GetDeckOk = false;
         }
 
-        return res;
+        return Ok(res);
     }
 
     [HttpPut]
     [Route("UpdateDeck")]
-    public UpdateDeckPacketResponse UpdateDeck([FromBody] UpdateDeckPacketRequired required)
+    public IActionResult UpdateDeck([FromBody] UpdateDeckPacketRequired required)
     {
-        UpdateDeckPacketResponse res = new();
-        var account = _context.User
-            .AsNoTracking()
-            .FirstOrDefault(user => user.UserAccount == required.UserAccount);
+        var principal = _tokenValidator.ValidateAccessToken(required.AccessToken);
+        if (principal == null) return Unauthorized();
 
-        if (account != null)
+        var res = new UpdateDeckPacketResponse();
+        var userId = _tokenValidator.GetUserIdFromAccessToken(principal);
+
+
+        if (userId != null)
         {   // 실제로 유저가 소유한 카드로 요청이 왔는지 검증 후 덱 업데이트
             var targetDeckId = required.DeckId;
             var unitToBeDeleted = required.UnitIdToBeDeleted;
             var unitToBeUpdated = required.UnitIdToBeUpdated;
-            var userId = account.UserId;
             var deckUnit = _context.DeckUnit
                 .FirstOrDefault(deckUnit => 
                     deckUnit.DeckId == targetDeckId && 
@@ -159,19 +168,20 @@ public class CollectionController
             res.UpdateDeckOk = 2;
         }
 
-        return res;
+        return Ok(res);
     }
 
     [HttpPut]
     [Route("UpdateLastDeck")]
-    public UpdateLastDeckPacketResponse UpdateLastDeck([FromBody] UpdateLastDeckPacketRequired required)
+    public IActionResult UpdateLastDeck([FromBody] UpdateLastDeckPacketRequired required)
     {
-        UpdateLastDeckPacketResponse res = new();
-        var account = _context.User
-            .AsNoTracking()
-            .FirstOrDefault(user => user.UserAccount == required.UserAccount);
+        var principal = _tokenValidator.ValidateAccessToken(required.AccessToken);
+        if (principal == null) return Unauthorized();
+        
+        var res = new UpdateLastDeckPacketResponse();
+        var userId = _tokenValidator.GetUserIdFromAccessToken(principal);
 
-        if (account != null)
+        if (userId != null)
         {
             var targetDeck = required.LastPickedInfo;
             var targetDeckIds = targetDeck.Keys.ToList();
@@ -186,6 +196,6 @@ public class CollectionController
             res.UpdateLastDeckOk = false;
         }
 
-        return res;
+        return Ok(res);
     }
 }

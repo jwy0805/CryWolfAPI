@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer.csproj": {}
+    "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer/APIServer.csproj": {}
   },
   "projects": {
-    "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer.csproj": {
+    "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer/APIServer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer.csproj",
+        "projectUniqueName": "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer/APIServer.csproj",
         "projectName": "APIServer",
-        "projectPath": "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer.csproj",
+        "projectPath": "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer/APIServer.csproj",
         "packagesPath": "/Users/jwy/.nuget/packages/",
-        "outputPath": "/Users/jwy/Documents/Dev/CryWolf/APIServer/obj/",
+        "outputPath": "/Users/jwy/Documents/Dev/CryWolf/APIServer/APIServer/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/jwy/.nuget/NuGet/NuGet.Config"
@@ -42,6 +42,10 @@
               "target": "Package",
               "version": "[6.0.26, )"
             },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[7.0.15, )"
+            },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
@@ -63,6 +67,10 @@
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.2.3, )"
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[7.5.0, )"
             }
           },
           "imports": [

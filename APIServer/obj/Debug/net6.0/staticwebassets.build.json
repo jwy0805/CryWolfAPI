@@ -1,8 +1,8 @@
 {
   "Version": 1,
-  "Hash": "0+b0kaRgGXCosvTNsFwYtx1fkG6XmS0l8Ne+N0iy6zI=",
-  "Source": "AccountServer",
-  "BasePath": "_content/AccountServer",
+  "Hash": "w4I/bqLtXDFGnq3C360jy+CVjWebW0ZhCcrH+FctS6s=",
+  "Source": "APIServer",
+  "BasePath": "_content/APIServer",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],

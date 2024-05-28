@@ -1,12 +1,27 @@
 using System.Security.Cryptography.X509Certificates;
 using AccountServer;
 using AccountServer.DB;
+using AccountServer.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var isLocal = Environment.GetEnvironmentVariable("ENVIRONMENT") == "Local";
+if (isLocal == false)
+{   // Kestrel Server
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(443, listenOptions =>
+        {
+            var certPath = Environment.GetEnvironmentVariable("CERT_PATH");
+            var certPwd = Environment.GetEnvironmentVariable("CERT_PASSWORD");
+            if (certPath != null && certPwd != null) listenOptions.UseHttps(certPath, certPwd);
+            else throw new Exception("Certification path or password is null");
+        });
+    });
+}
+
 var certPath = Environment.GetEnvironmentVariable("CERT_PATH");
 var certPwd = Environment.GetEnvironmentVariable("CERT_PASSWORD");
 
@@ -20,29 +35,33 @@ var appConfig = configService.LoadGoogleConfigs(path);
 // Add services to the container. -- StartUp.cs
 var defaultConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ??
                               builder.Configuration.GetConnectionString("DefaultConnection");
+var jwtSecret = "QweksldfoqjksdlgSidjSDKgSkdnHGSEISKdndgkseG";
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = null;
     options.JsonSerializerOptions.DictionaryKeyPolicy = null;
 });
-
 builder.Services.AddAuthentication()
     .AddGoogle(options =>
     {
         options.ClientId = appConfig.GoogleClientId;
         options.ClientSecret = appConfig.GoogleClientSecret;
     });
-
+builder.Services.AddScoped<TokenService>(provider => new TokenService(jwtSecret, 
+    provider.GetRequiredService<AppDbContext>()));
+builder.Services.AddScoped<TokenValidator>(provider => new TokenValidator(jwtSecret, 
+        provider.GetRequiredService<AppDbContext>(),
+        provider.GetRequiredService<TokenService>()));
+builder.Services.AddScoped<ExpiredTokenCleanupService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseMySql(defaultConnectionString, new MariaDbServerVersion(new Version(11, 3, 2)));
 });
 
 // -- StartUp.cs - Configure
-
 if (isLocal == false)
-{   //Data Protection
+{   // Data Protection
     if (certPath != null && certPwd != null)
     #pragma warning disable CA1416
         builder.Services.AddDataProtection()

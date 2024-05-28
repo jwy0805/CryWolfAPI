@@ -1,6 +1,8 @@
 using AccountServer.DB;
+using AccountServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AccountServer.Controllers;
 
@@ -9,17 +11,21 @@ namespace AccountServer.Controllers;
 public class UserAccountController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly TokenService _tokenService;
+    private readonly TokenValidator _tokenValidator;
     
-    public UserAccountController(AppDbContext context)
+    public UserAccountController(AppDbContext context, TokenService tokenService, TokenValidator validator)
     {
         _context = context;
+        _tokenService = tokenService;
+        _tokenValidator = validator;
     }
     
     [HttpPost]
     [Route("CreateAccount")]
     public CreateUserAccountPacketResponse CreateAccount([FromBody] CreateUserAccountPacketRequired required)
     {
-        CreateUserAccountPacketResponse res = new();
+        var res = new CreateUserAccountPacketResponse();
         var account = _context.User
             .AsNoTracking()
             .FirstOrDefault(user => user.UserAccount == required.UserAccount);
@@ -42,48 +48,27 @@ public class UserAccountController : ControllerBase
             _context.User.Add(newUser);
             var success = _context.SaveChangesExtended(); // 이 때 UserId가 생성
             newUser.UserName = $"Player{newUser.UserId}";
-            
             res.CreateOk = success;
+            // 기본 덱, 컬렉션 생성
+            CreateInitDeckAndCollection(newUser.UserId, new [] {
+                UnitId.Hare, UnitId.Toadstool, UnitId.FlowerPot, 
+                UnitId.Blossom, UnitId.TrainingDummy, UnitId.SunfloraPixie
+            }, Camp.Sheep);
+            
+            CreateInitDeckAndCollection(newUser.UserId, new [] {
+                UnitId.DogBowwow, UnitId.MoleRatKing, UnitId.MosquitoStinger, 
+                UnitId.Werewolf, UnitId.CactusBoss, UnitId.SnakeNaga
+            }, Camp.Wolf);
         }
         else
         {
             res.CreateOk = false;
+            res.Message = "Duplicate ID";
         }
         
         return res;
     }
 
-    [HttpPost]
-    [Route("CreateInitDeck")]
-    public CreateInitDeckPacketResponse CreateInitDeck([FromBody] CreateInitDeckPacketRequired required)
-    {
-        CreateInitDeckPacketResponse res = new();
-        var account = _context.User
-            .AsNoTracking()
-            .FirstOrDefault(user => user.UserAccount == required.UserAccount);
-
-        if (account != null)
-        {
-            CreateInitDeckAndCollection(account.UserId, new [] {
-                UnitId.Hare, UnitId.Toadstool, UnitId.FlowerPot, 
-                UnitId.Blossom, UnitId.TrainingDummy, UnitId.SunfloraPixie
-            }, Camp.Sheep);
-            
-            CreateInitDeckAndCollection(account.UserId, new [] {
-                UnitId.DogBowwow, UnitId.MoleRatKing, UnitId.MosquitoStinger, 
-                UnitId.Werewolf, UnitId.CactusBoss, UnitId.SnakeNaga
-            }, Camp.Wolf);
-            
-            res.CreateDeckOk = true;
-        }
-        else
-        {
-            res.CreateDeckOk = false;
-        }
-
-        return res;
-    }
-    
     private void CreateInitDeckAndCollection(int userId, UnitId[] unitIds, Camp camp)
     {
         foreach (var unitId in unitIds)
@@ -110,7 +95,7 @@ public class UserAccountController : ControllerBase
     [Route("Login")]
     public LoginUserAccountPacketResponse LoginAccount([FromBody] LoginUserAccountPacketRequired required)
     {
-        LoginUserAccountPacketResponse res = new();
+        var res = new LoginUserAccountPacketResponse();
         var account = _context.User
             .AsNoTracking()
             .FirstOrDefault(user => user.UserAccount == required.UserAccount && user.Password == required.Password);
@@ -121,11 +106,32 @@ public class UserAccountController : ControllerBase
         }
         else
         {
+            var tokens = _tokenService.GenerateTokens(account.UserId);
+            res.AccessToken = tokens.AccessToken;
+            res.RefreshToken = tokens.RefreshToken;
             res.LoginOk = true;
         }
-
-        if (account != null) res.UserId = account.UserId;
-
+        
         return res;
+    }
+
+    [HttpPost]
+    [Route("RefreshToken")]
+    public IActionResult RefreshToken([FromBody] RefreshTokenRequired request)
+    {
+        try
+        {
+            var tokens = _tokenValidator.RefreshAccessToken(request.RefreshToken);
+            var response = new RefreshTokenResponse()
+            {
+                AccessToken = tokens.AccessToken,
+                RefreshToken = tokens.RefreshToken
+            };
+            return Ok(response);
+        }
+        catch (SecurityTokenException exception)
+        {
+            return Unauthorized(new { message = exception.Message });
+        }
     }
 }

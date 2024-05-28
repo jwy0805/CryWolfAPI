@@ -10,17 +10,7 @@ public class CreateUserAccountPacketRequired
 public class CreateUserAccountPacketResponse
 {
     public bool CreateOk { get; set; }
-    public string UserAccount { get; set; }
-}
-
-public class CreateInitDeckPacketRequired
-{
-    public string UserAccount { get; set; }
-}
-
-public class CreateInitDeckPacketResponse
-{
-    public bool CreateDeckOk { get; set; }
+    public string Message { get; set; }
 }
 
 public class LoginUserAccountPacketRequired
@@ -29,25 +19,27 @@ public class LoginUserAccountPacketRequired
     public string Password { get; set; }
 }
 
-public class ServerInfo
-{
-    public string Name { get; set; }
-    public string Ip { get; set; }
-    public int Port { get; set; }
-    public int BusyScore { get; set; }
-}
-
 public class LoginUserAccountPacketResponse
 {
     public bool LoginOk { get; set; }
-    public int UserId { get; set; }
-    // public int Token { get; set; }
-    // public List<ServerInfo> ServerList { get; set; } = new();
+    public string AccessToken { get; set; }
+    public string RefreshToken { get; set; }
+}
+
+public class RefreshTokenRequired
+{
+    public string RefreshToken { get; set; }
+}
+
+public class RefreshTokenResponse
+{
+    public string AccessToken { get; set; }
+    public string RefreshToken { get; set; }
 }
 
 public class GetOwnedCardsPacketRequired
 {
-    public string UserAccount { get; set; }
+    public string AccessToken { get; set; }
 }
 
 public class UnitInfo
@@ -69,7 +61,7 @@ public class GetOwnedCardsPacketResponse
 
 public class GetInitDeckPacketRequired
 {
-    public string UserAccount { get; set; }
+    public string AccessToken { get; set; }
 }
 
 public class DeckInfo
@@ -89,7 +81,7 @@ public class GetInitDeckPacketResponse
 
 public class UpdateDeckPacketRequired
 {
-    public string UserAccount { get; set; }
+    public string AccessToken { get; set; }
     public int DeckId { get; set; }
     public UnitId UnitIdToBeDeleted { get; set; }
     public UnitId UnitIdToBeUpdated { get; set; }
@@ -102,7 +94,7 @@ public class UpdateDeckPacketResponse
 
 public class UpdateLastDeckPacketRequired
 {
-    public string UserAccount { get; set; }
+    public string AccessToken { get; set; }
     public Dictionary<int, bool> LastPickedInfo { get; set; }
 }
 

@@ -5,15 +5,13 @@ namespace AccountServer.DB;
 public class AppDbContext : DbContext
 {
     public DbSet<User> User { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Unit> Unit { get; set; }
     public DbSet<UserUnit> UserUnit { get; set; }
     public DbSet<Deck> Deck { get;set; }
     public DbSet<DeckUnit> DeckUnit { get; set; }
     
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-        
-    }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
